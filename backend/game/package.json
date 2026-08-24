@@ -1,0 +1,15 @@
+{
+  "name": "game-server",
+  "version": "1.0.0",
+  "main": "gameServer.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "cookie": "^2.0.1",
+    "ws": "^8.21.3"
+  }
+}
