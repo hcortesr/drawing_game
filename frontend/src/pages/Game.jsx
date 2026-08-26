@@ -10,10 +10,10 @@ export default function Game() {
   const {
     roomCode, playerName, players, setPlayers,
     currentDrawer, setCurrentDrawer, wordToDraw, setWordToDraw,
-    round, timeLeft, setTimeLeft, setScores
+    round, timeLeft, setTimeLeft, setScores, isDrawer, setIsDrawer
   } = useGame()
 
-  const [isDrawer, setIsDrawer] = useState(false)
+  
   const [localTime, setLocalTime] = useState(timeLeft)
 
   // Mock: determine if current player is drawer

@@ -1,0 +1,51 @@
+services:
+  cache:
+    image: redis:8.10-alpine
+    
+    networks:
+      - drawing-app-network
+
+  game-server:
+    build: ../backend/game
+    ports:
+      - "8080:8080"
+    networks:
+      - drawing-app-network
+
+    volumes:
+      - ../backend/game:/app
+      - node_modules_game_server:/app/node_modules
+
+  gateway:
+    build: ../backend/gateway
+    ports:
+      - "8081:8080"
+    networks:
+      - drawing-app-network
+
+    volumes:
+      - ../backend/gateway:/app
+      - node_modules_gateway:/app/node_modules
+ 
+  api:
+    build: ../backend/api
+    ports:
+      - "8082:8080"
+    networks:
+      - drawing-app-network
+
+    volumes:
+      - ../backend/api:/app
+      - node_modules_api:/app/node_modules 
+      - /var/run/docker.sock:/var/run/docker.sock
+
+networks:
+  drawing-app-network:
+    driver: bridge
+    name: drawing-app-network
+
+
+volumes:
+  node_modules_game_server:
+  node_modules_gateway:
+  node_modules_api:

@@ -7,7 +7,7 @@ class Player {
 
 // It controlls every aspect of the game. The WS connection creates it, updates it ad it also tells which components to write to the players.
 export class Game {
-  constructor(numWords, adminKey, adminName) {
+  constructor(numWords, adminKey, adminName, roomCode) {
     this.words = [];
     this.searchWords(numWords);
     this.round = 0
@@ -16,7 +16,7 @@ export class Game {
     this.state = "WAITING"
     this.draw = undefined;
     this.adminKey = adminKey;
-    this.roomCode = Math.floor(100000 + Math.random() * 900000);
+    this.roomCode = roomCode;
     this.players = { // The game just uses the id of the player, the names is just a value the frontend uses.
       [adminKey]: new Player(adminName),
     }
@@ -26,17 +26,12 @@ export class Game {
     
   }
 
-  readDataDraw(draw) {
+  updateDrawing(draw) {
     this.draw = draw;
-    this.writeData();
+    
   }
   readDataNewMessage(message) {
     this.chat.push(message);
-    this.writeData();
-  }
-
-  readDataDecreaseTime(message) {
-    this.time -= 1;
     this.writeData();
   }
   
@@ -48,8 +43,26 @@ export class Game {
     }
   }
 
+
   deleteChat() {
+    // This function resets the chat.
     this.chat = [];
+  }
+
+  startGame(client) {
+    this.state = 'PLAYING';
+    
+    const intervalID = setInterval(() => {
+
+      client.send(this.writeData(null));
+      this.time -= 1;
+      
+      if (this.time <= 0) {
+        this.nextRound();
+        clearInterval(intervalID);
+      }
+    });
+
   }
 
   // It prints all the data that has to be send to the users during each phase.
@@ -82,28 +95,28 @@ export class Game {
 
       case "PLAYING":
 
-        let leader = calcLeaderboard();
+        let leader = this.calcLeaderboard();
 
-        this.wsConnection.send(JSON.stringify({
+        return JSON.stringify({
           draw: this.draw,
           state: this.state,
           time: this.time,
           leader: leader,
           chat: this.chat,
-        }));
+        });
         break;
 
       case "WINNER": // It returns the name of the player that won.
 
-      this.wsConnection.send(JSON.stringify({
-        word: words[this.round],
-        player: this.lastWon,
-      }))
+        return JSON.stringify({
+          word: words[this.round],
+          player: this.lastWon,
+        });
         
         break;
 
       case "END":
-        let list = calcLeaderboard();
+        let list = this.calcLeaderboard();
         this.wsConnection.send(JSON.stringify(list));
         break;
         

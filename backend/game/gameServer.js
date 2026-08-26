@@ -15,9 +15,17 @@ import { Game } from "./Game.js";
 
 // If it's the first connection of the user, it does't have a userKey. It is created by the game object and returned through the connection.
 // The only 'cookie' that the user has to send through each request, is it's userKey.
+setInterval(() => {
+  process.exit(0);
+}, 200_000);
 
-const numberRounds = process.env.NUMBER_ROUNDS;
-const game = new Game(6, "qwerty", "mi-user");
+const noRounds = process.env.NO_ROUNDS;
+const adminKey = process.env.ADMIN_KEY;
+const adminName = process.env.ADMIN_NAME;
+const roomNo = process.env.ROOM_NU;
+
+
+const game = new Game(noRounds, adminKey, adminName, roomNo);
 
 
 const wss = new WebSocketServer({ port: 8080 });
@@ -90,19 +98,36 @@ wss.on("connection", (ws, request) => {
     // doActionWhileConnecting(request, ws);
 
     const message = JSON.parse(data.toString());
-    
-    if (message.messageType == "normalReq") {
-      const req = game.writeData(message.userKey);
-      ws.send(JSON.stringify(req));
 
-    } else if (message.messageType== "joinNewUser") {
-      const userKey = game.addNewUser(message.userName);
+    switch (message.messageType) {
+      case "normalReq":
+        const req = game.writeData(message.userKey);
+        ws.send(JSON.stringify(req));
+        break;
+
+      case "joinNewUser":
+        const userKey = game.addNewUser(message.userName);
       
-      const req = JSON.stringify({
-        userKey: userKey,
-      });
+        const req1 = JSON.stringify({
+          userKey: userKey,
+        });
+        sendAllUsers(req1);
+        break;
 
-      sendAllUsers(req);
+      case "startGame":
+        if (message.userKey == game.adminKey) {
+          game.startGame(ws);
+        }
+
+      case "updateDrawing":
+        game.updateDrawing(message.drawing);
+
+        const req2 = game.writeData(null);
+        sendAllUsers(req2);
+
+        break;
+
+
 
     }
 

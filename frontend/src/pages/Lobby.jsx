@@ -1,22 +1,27 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useGame } from '../context/GameContext'
+import { getCookie } from './Home'
 
 export default function Lobby() {
   const navigate = useNavigate()
-  const { roomCode, playerName, isCreator, players, setPlayers, setCurrentDrawer } = useGame()
+  const { roomCode, playerName, isCreator, players, setPlayers, setCurrentDrawer, wsRef } = useGame()
   const [localName, setLocalName] = useState(playerName)
+
+  const updateName = () => {}
 
 
   const handleStart = () => {
-    setCurrentDrawer(players[0]?.id)
-    navigate('/game')
+
+    const req = JSON.stringify({
+      messageType: 'startGame',
+      userKey: getCookie('userKey'),
+    });
+
+    wsRef.current.send(req);
+    
   }
 
-  const updateName = () => {
-    
-    
-  }
 
   return (
     <div className="page">

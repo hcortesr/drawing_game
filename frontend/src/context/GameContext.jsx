@@ -10,7 +10,9 @@ export const useGame = () => useContext(GameContext)
 export const GameProvider = ({ children }) => {
 
   const navigate = useNavigate();
+
   const wsRef = useRef(null);
+  const canvasRef = useRef(null)
 
   const [roomCode, setRoomCode] = useState('')
   const [playerName, setPlayerName] = useState('')
@@ -21,7 +23,8 @@ export const GameProvider = ({ children }) => {
   const [wordToDraw, setWordToDraw] = useState('')
   const [scores, setScores] = useState({})
   const [round, setRound] = useState(1)
-  const [timeLeft, setTimeLeft] = useState(80)
+  const [timeLeft, setTimeLeft] = useState(100)
+  const [isDrawer, setIsDrawer] = useState(false)
 
 
   function getCookie(name) {
@@ -31,6 +34,18 @@ export const GameProvider = ({ children }) => {
     if (parts.length === 2) {
         return parts.pop().split(";").shift();
     }
+  }
+
+  function loadCanvas (canvas, dataURL) {
+  const img = new Image();
+
+  img.onload = () => {
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0);
+  };
+
+  img.src = dataURL;
   }
 
   useEffect(() => {
@@ -79,7 +94,33 @@ export const GameProvider = ({ children }) => {
 
           
           navigate('/lobby');
+          break;
 
+        case 'PLAYING':
+
+        /*
+          Information that the server sends each second.
+
+          draw: this.draw,
+          state: this.state,
+          time: this.time,
+          leader: leader,
+          chat: this.chat,
+
+          //TODO: add these properties to the server.
+          isDrawer
+
+        */
+
+          // This case musst also inform the user if it is the current drawer.
+
+          setTimeLeft(message.time);
+          loadCanvas(canvasRef, message.draw);
+          
+
+
+          navigate('/game');
+          break;
 
 
           
@@ -102,6 +143,9 @@ export const GameProvider = ({ children }) => {
     round, setRound,
     timeLeft, setTimeLeft,
     wsRef,
+    canvasRef,
+    isDrawer,
+    setIsDrawer,
   }
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>

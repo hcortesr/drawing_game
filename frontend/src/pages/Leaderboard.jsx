@@ -7,6 +7,8 @@ export default function Leaderboard() {
   const { players, scores, setGameState, isCreator, setCurrentDrawer, setPlayers } = useGame()
   const [ranked, setRanked] = useState([])
 
+
+  // This useEffect loads the information of the leaderboard (players, scores)
   useEffect(() => {
     const combined = players.map(p => ({
       ...p,

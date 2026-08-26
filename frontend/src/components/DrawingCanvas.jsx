@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect } from 'react'
+import { useGame } from '../context/GameContext';
 
 const COLORS = [
   '#000000', '#ffffff', '#ef4444', '#f97316', '#f59e0b',
@@ -9,11 +10,11 @@ const COLORS = [
 const BRUSH_SIZES = [4, 8, 16, 24]
 
 export default function DrawingCanvas({ isDrawer }) {
-  const canvasRef = useRef(null)
-  const [isDrawing, setIsDrawing] = useState(false)
-  const [color, setColor] = useState('#000000')
-  const [brushSize, setBrushSize] = useState(4)
-  const [tool, setTool] = useState('brush') // brush, eraser
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [color, setColor] = useState('#000000');
+  const [brushSize, setBrushSize] = useState(4);
+  const [tool, setTool] = useState('brush'); // brush, eraser
+  const { canvasRef, wsRef } = useGame();
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -22,12 +23,22 @@ export default function DrawingCanvas({ isDrawer }) {
     ctx.fillRect(0, 0, canvas.width, canvas.height)
   }, [])
 
+  
+
   const sendDrawing = () => {
     // TODO: Do websocket connection.
     // It has to send the image through WebSocket.
+    // The canvas should be stored in the context of the app.
+
     const canvas = canvasRef.current;
     const canvasBase64 = canvas.toDataURL("image/png");
-    // console.log(canvasBase64);
+
+    const req = {
+      messageType: "updateDrawing",
+      drawing: canvasBase64,
+    };
+    
+    wsRef.send(req);
     
   }
 

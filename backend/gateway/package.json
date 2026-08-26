@@ -1,0 +1,20 @@
+{
+  "dependencies": {
+    "express": "^5.2.1",
+    "nodemon": "^3.1.14",
+    "ws": "^8.21.3"
+  },
+  "scripts": {
+    "start": "node gateway.js",
+    "dev": "nodemon gateway.js"
+  },
+  "type": "module",
+  "name": "gateway",
+  "version": "1.0.0",
+  "main": "gateway.js",
+  "devDependencies": {},
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": ""
+}
