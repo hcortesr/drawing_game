@@ -13,10 +13,14 @@ function getCookie(name) {
 
 export default function Home() {
   const navigate = useNavigate()
-  const { setRoomCode, setIsCreator, setPlayerName, generateRoomCode, wsRef } = useGame()
+  const { setRoomCode, setIsCreator, setPlayerName, generateRoomCode, wsRef, playerName } = useGame()
   const [joinCode, setJoinCode] = useState('')
   const [name, setName] = useState('')
 
+
+
+  // TODO: This method should not only make a connection, it has to create the server and then connect.
+  // The userKey is created by the api. Not by the server. So the user already has it before doing the connetion.
   const handleCreate = () => {
     if (!name.trim()) return alert('Enter your name first!')
 
@@ -34,20 +38,42 @@ export default function Home() {
       wsRef.current.send(msg);
     }
 
-    
-
-
   }
 
+  // This method is responsible for joining users to already created servers
+  // The user doesn't have a userKey, so the first request doesn't have one.
   const handleJoin = () => {
     if (!name.trim()) return alert('Enter your name first!')
-    if (joinCode.length !== 6) return alert('Enter a valid 7-digit room code!')
-    setRoomCode(joinCode)
-    setIsCreator(false)
+    if (joinCode.length !== 6) return alert('Enter a valid 6-digit room code!')
 
-    setPlayerName(name)
+    console.log("Try to join");
+    console.log("userKey", name, getCookie('userKey'));
+    // TODO: Here the connections is directly made. It should connect to a gateway and then test the connection.
+    const ws = new WebSocket("ws://localhost:8080");
+    wsRef.current = ws;
 
-  
+
+    
+      // This method is to save the received userKey in the Cookies after the connection.
+      wsRef.current.onmessage = (event) => {
+
+        console.log("onmessage handle join");
+        console.log(event.data);
+        const message = JSON.parse(event.data.toString());
+        document.cookie = `userKey=${message.userKey}`;
+
+        window.location.reload();
+
+      }
+      
+      wsRef.current.onopen = () => {
+        const msg = JSON.stringify({
+          messageType: 'joinNewUser',
+          userName: name,
+        });
+        wsRef.current.send(msg);
+      }
+
   }
 
   return (
@@ -93,9 +119,9 @@ export default function Home() {
           <div style={{ display: 'flex', gap: 10 }}>
             <input
               type="text"
-              placeholder="Room code (7 digits)"
+              placeholder="Room code (6 digits)"
               value={joinCode}
-              onChange={(e) => setJoinCode(e.target.value.replace(/\D/g, '').slice(0, 7))}
+              onChange={(e) => setJoinCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
               style={{
                 flex: 1,
                 padding: '14px 18px',

@@ -146,5 +146,7 @@ export class Game {
     const userKey = crypto.randomUUID();
     this.players[userKey] = new Player(userName);
 
+    return userKey;
+
   }
 }

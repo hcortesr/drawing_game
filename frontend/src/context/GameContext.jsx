@@ -12,10 +12,6 @@ export const GameProvider = ({ children }) => {
   const navigate = useNavigate();
   const wsRef = useRef(null);
 
-
-  
-  
-
   const [roomCode, setRoomCode] = useState('')
   const [playerName, setPlayerName] = useState('')
   const [isCreator, setIsCreator] = useState(false)
@@ -58,28 +54,35 @@ export const GameProvider = ({ children }) => {
     wsRef.current.onmessage = (event) => {
     
       const message = JSON.parse(event.data.toString());
-  
-        console.log(event.data);
-        console.log(message);
-        switch(message.state) {
-          case 'WAITING':
-            setRoomCode(message.roomCode);
-            setPlayerName(message.playerName);
-            setIsCreator(message.isCreator);
-            setGameState('WAITINH');
 
-            const mockPlayers = [];
-            message.players.forEach((player) => {
-              mockPlayers.push({ id: 1, name: playerName || 'You', isCreator: message.isCreator, score: 0, avatar: '🎨' });
-            })
-            setPlayers(mockPlayers)
+      console.log("GameContext: Message received");
+      console.log(event.data);
+      console.log(message);
 
-            
-            navigate('/lobby');
+      switch(message.state) {
+
+        // This is what the user received after it has sucessfuly logged in. It is automatically redirected to the lobby.
+        case 'WAITING':
+          setRoomCode(message.roomCode);
+          setPlayerName(message.playerName);
+          setIsCreator(message.isCreator);
+          setGameState('WAITING');
+
+          const mockPlayers = [];
+          message.players.forEach((player, index) => {
+            let isC = index === 0;
+            console.log(player, isC);
+
+            mockPlayers.push({ id: 1, name: player || 'You', isCreator: isC, score: 0, avatar: '🎨' });
+          })
+          setPlayers(mockPlayers)
+
+          
+          navigate('/lobby');
 
 
 
-            
+          
         }
   
       };

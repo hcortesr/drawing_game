@@ -14,8 +14,8 @@ export default function Lobby() {
   }
 
   const updateName = () => {
-    if (!localName.trim()) return
-    setPlayers(prev => prev.map(p => p.id === 1 ? { ...p, name: localName } : p))
+    
+    
   }
 
   return (

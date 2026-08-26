@@ -65,24 +65,49 @@ function doActionWhileConnecting(data, ws) {
 
 }
 
+
+
 // The service is connected to a WebSocket gateway, so the ws is not really important. What matters is the userKey.
 wss.on("connection", (ws, request) => {
+
+
+  
+  function sendAllUsers(req, noUsers) {
+
+      // TODO: This function has to send a request to all users. It must return a request with a list of userKeys.
+      //       The gateway has a map off all the connections userKey: ws.
+      wss.clients.forEach((client) => {
+        client.send(req);
+      })
+  }
+
+
   console.log("Player connected");
   
   ws.on("message", (data) => {
 
-    doActionAlreadyConnected();
-    doActionWhileConnecting(request, ws);
+    // doActionAlreadyConnected();
+    // doActionWhileConnecting(request, ws);
 
     const message = JSON.parse(data.toString());
     
     if (message.messageType == "normalReq") {
       const req = game.writeData(message.userKey);
       ws.send(JSON.stringify(req));
+
+    } else if (message.messageType== "joinNewUser") {
+      const userKey = game.addNewUser(message.userName);
+      
+      const req = JSON.stringify({
+        userKey: userKey,
+      });
+
+      sendAllUsers(req);
+
     }
 
     // It prints the messages received.
-    console.log("Received:", message);
+    console.log("Send:", message);
     
     
   });
@@ -95,8 +120,6 @@ wss.on("connection", (ws, request) => {
     console.error("WebSocket error:", error);
   });
 
-  
-    
 });
 
 console.log("WebSocket server listening on ws://localhost:8080");
