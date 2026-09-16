@@ -5,16 +5,16 @@ services:
     networks:
       - drawing-app-network
 
-  game-server:
-    build: ../backend/game
-    ports:
-      - "8080:8080"
-    networks:
-      - drawing-app-network
+  # game-server:
+  #   build: ../backend/game
+  #   ports:
+  #     - "8080:8080"
+  #   networks:
+  #     - drawing-app-network
 
-    volumes:
-      - ../backend/game:/app
-      - node_modules_game_server:/app/node_modules
+  #   volumes:
+  #     - ../backend/game:/app
+  #     - node_modules_game_server:/app/node_modules
 
   gateway:
     build: ../backend/gateway

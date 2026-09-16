@@ -1,6 +1,8 @@
 import { WebSocketServer } from "ws";
 import { parseCookie } from 'cookie'
 import { Game } from "./Game.js";
+import express from 'express';
+import { createClient } from "redis";
 
 // When the server is created it should already:
 // - Create the Game object with the number of rounds.
@@ -17,7 +19,12 @@ import { Game } from "./Game.js";
 // The only 'cookie' that the user has to send through each request, is it's userKey.
 setInterval(() => {
   process.exit(0);
-}, 200_000);
+}, 100_000);
+
+// The only thing the game server has to do is change the state of the redis key.
+const redis = createClient({
+    url: "redis://cache:6379"
+});
 
 const noRounds = process.env.NO_ROUNDS;
 const adminKey = process.env.ADMIN_KEY;
@@ -27,8 +34,22 @@ const roomNo = process.env.ROOM_NU;
 
 const game = new Game(noRounds, adminKey, adminName, roomNo);
 
+const app = express();
 
-const wss = new WebSocketServer({ port: 8080 });
+app.get('/health', async (req, res) => {
+  res.status(200).send("OK");
+})  
+
+const server = app.listen(8080, () => {
+  console.log(`Server running on port 8080`);
+});
+
+const wss = new WebSocketServer({ server });
+
+wss.on("error", (e) => {
+  console.log(e.message);
+  console.log(e.name);
+})
 
 function doActionAlreadyConnected() {
 
@@ -78,8 +99,6 @@ function doActionWhileConnecting(data, ws) {
 // The service is connected to a WebSocket gateway, so the ws is not really important. What matters is the userKey.
 wss.on("connection", (ws, request) => {
 
-
-  
   function sendAllUsers(req, noUsers) {
 
       // TODO: This function has to send a request to all users. It must return a request with a list of userKeys.
@@ -89,10 +108,10 @@ wss.on("connection", (ws, request) => {
       })
   }
 
-
   console.log("Player connected");
   
-  ws.on("message", (data) => {
+  ws.on("message", async (data) => {
+    console.log("A message");
 
     // doActionAlreadyConnected();
     // doActionWhileConnecting(request, ws);
@@ -101,22 +120,31 @@ wss.on("connection", (ws, request) => {
 
     switch (message.messageType) {
       case "normalReq":
+      case "connect":
+        console.log("A normal request--");
         const req = game.writeData(message.userKey);
+        console.log("pre send");
+        req["userKey"] = message.userKey;
         ws.send(JSON.stringify(req));
+        console.log("post send");
         break;
 
+
+
       case "joinNewUser":
-        const userKey = game.addNewUser(message.userName);
+        console.log("onJoinNew");
+        const userKey = game.addNewUser(message.userName, message.userKey);
       
         const req1 = JSON.stringify({
           userKey: userKey,
         });
-        sendAllUsers(req1);
+        ws.send(req1);
         break;
 
       case "startGame":
         if (message.userKey == game.adminKey) {
           game.startGame(ws);
+          await redis.set(roomNo, "PLAYING", { KEEPTTL: true });
         }
 
       case "updateDrawing":
@@ -126,6 +154,9 @@ wss.on("connection", (ws, request) => {
         sendAllUsers(req2);
 
         break;
+
+      case "assignUserKey":
+        game.addNewUser(message.userName, message.userKey);
 
 
 
@@ -145,6 +176,10 @@ wss.on("connection", (ws, request) => {
     console.error("WebSocket error:", error);
   });
 
+  console.log("still");
+
 });
+
+
 
 console.log("WebSocket server listening on ws://localhost:8080");

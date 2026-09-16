@@ -154,9 +154,9 @@ export class Game {
     }
   }
 
-  addNewUser(userName) {
+  addNewUser(userName, userKey) {
 
-    const userKey = crypto.randomUUID();
+    // const userKey = crypto.randomUUID();
     this.players[userKey] = new Player(userName);
 
     return userKey;

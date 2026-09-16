@@ -20,23 +20,47 @@ export default function Home() {
 
 
   // TODO: This method should not only make a connection, it has to create the server and then connect.
+  // TODO: The box to select the number of rounds must be added.
   // The userKey is created by the api. Not by the server. So the user already has it before doing the connetion.
-  const handleCreate = () => {
+  const handleCreate = async () => {
     if (!name.trim()) return alert('Enter your name first!')
 
-    const ws = new WebSocket("ws://localhost:8080");
-    wsRef.current = ws;
-    
-    wsRef.current.onopen = () => {
-      const msg = JSON.stringify({
-        userKey: getCookie('userKey'),
-        messageType: 'normalReq',
-      }); 
-      console.log("Handle create msg");
-      console.log(msg);
+    // First the request to create the server and get the adminKey is requested.
+    const res = await fetch("http://localhost:8082/newServer", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            "noRounds": 3, 
+            "userName": name,
+        })
+    });
 
-      wsRef.current.send(msg);
-    }
+    // The cookie is on the data object. It has to be added.
+    const data = await res.json();
+    document.cookie = `userKey=${data.userKey}`
+
+    console.log("Request after server creation: ", data);
+
+    // Now the webpage has to be reloaded because the app automatically handles the connection.
+    navigate("/lobby");
+
+
+    // const ws = new WebSocket("ws://localhost:8080");
+    // wsRef.current = ws;
+    
+    // wsRef.current.onopen = () => {
+    //   const msg = JSON.stringify({
+    //     userKey: getCookie('userKey'),
+    //     messageType: 'normalReq',
+    //   }); 
+    //   console.log("Handle create msg");
+    //   console.log(msg);
+
+    //   wsRef.current.send(msg);
+    // }
+    
 
   }
 
@@ -49,30 +73,31 @@ export default function Home() {
     console.log("Try to join");
     console.log("userKey", name, getCookie('userKey'));
     // TODO: Here the connections is directly made. It should connect to a gateway and then test the connection.
-    const ws = new WebSocket("ws://localhost:8080");
+    const ws = new WebSocket("ws://localhost:8081");
+    console.log("made");
     wsRef.current = ws;
 
+    // This method is to save the received userKey in the Cookies after the connection.
+    wsRef.current.onmessage = (event) => {
 
+      console.log("onmessage handle join");
+      console.log(event.data);
+      const message = JSON.parse(event.data.toString());
+      document.cookie = `userKey=${message.userKey}`;
+
+      window.location.reload();
+
+    }
     
-      // This method is to save the received userKey in the Cookies after the connection.
-      wsRef.current.onmessage = (event) => {
-
-        console.log("onmessage handle join");
-        console.log(event.data);
-        const message = JSON.parse(event.data.toString());
-        document.cookie = `userKey=${message.userKey}`;
-
-        window.location.reload();
-
-      }
-      
-      wsRef.current.onopen = () => {
-        const msg = JSON.stringify({
-          messageType: 'joinNewUser',
-          userName: name,
-        });
-        wsRef.current.send(msg);
-      }
+    wsRef.current.onopen = () => {
+      console.log("onopen");
+      const msg = JSON.stringify({
+        messageType: 'joinNewUser',
+        userName: name,
+        roomNo: joinCode,
+      });
+      wsRef.current.send(msg);
+    }
 
   }
 

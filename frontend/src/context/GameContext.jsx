@@ -51,21 +51,28 @@ export const GameProvider = ({ children }) => {
   useEffect(() => {
     const cookie = getCookie('userKey');
 
+
+    // Make the connection.
     if (cookie != undefined) {
-      wsRef.current = new WebSocket("ws://localhost:8080");
+      // This function must talk to the gateway using it's routes.
+      wsRef.current = new WebSocket("ws://localhost:8081");
 
       wsRef.current.onopen = () => {
       const msg = JSON.stringify({
         userKey: getCookie('userKey'),
-        messageType: 'normalReq',
+        messageType: 'connect',
       }); 
       console.log("Handle create msg");
       console.log(msg);
 
       wsRef.current.send(msg);
-      
+
+    }
+    wsRef.current.onclose = (event) => {
+      console.log("CcClosed");
     }
 
+    // What to do when a message is received.
     wsRef.current.onmessage = (event) => {
     
       const message = JSON.parse(event.data.toString());

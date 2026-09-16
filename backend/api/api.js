@@ -2,22 +2,29 @@ import express from "express";
 import { randomUUID } from "crypto";
 import Docker from "dockerode";
 import { createClient } from "redis";
+import cors from "cors";
+
+
 
 const redis = createClient({
-  url: "redis://cache:6379"
+    url: "redis://cache:6379"
+});
+await redis.connect().then(() => {
+    console.log("Sucessfully connected");
 });
 
-await redis.connect();
-
-
 const app = express();
+
+app.use(cors({
+  origin: "*"
+}));
 
 const PORT = 8080;
 
 app.use(express.json());
 
 app.post("/newServer", async (req, res) => {
-
+    // Request must have: noRounds, userName
     const data = req.body;
 
     console.log("NewServercalled");
@@ -25,14 +32,14 @@ app.post("/newServer", async (req, res) => {
 
     console.log("info", info);
     
-    await registerContainerRedis(info.roomNo, info.noRounds);
+    await registerContainerRedis(info.roomNo, info.noRounds, info.userKey);
     console.log("-> Container registered")
     await addConnectionToGateway(info.roomNo);
     console.log("===0 connection added")
 
     res.json({
     userKey: info.userKey
-    }); 
+    });
 });
 
 app.get("/health", (req, res) => {
@@ -47,6 +54,8 @@ app.listen(PORT, () => {
 
 
 async function createGameContainer(noRounds, userName) {
+
+    // TODO: The container has a bind mount. I need to change it to the real image.
     
     const docker = new Docker();
 
@@ -56,9 +65,23 @@ async function createGameContainer(noRounds, userName) {
     const container = await docker.createContainer({
     Image: "docker-game-server",
     name: `game-server-${roomNo}`,
+
     HostConfig: {
-        NetworkMode: "drawing-app-network",
-        AutoRemove: true,
+        // AutoRemove: true,
+        Binds: [
+            "D:/Documentos/El bueno ENDGAME/AWS/Painting Game/backend/game:/app",
+            "node_modules_game_server:/app/node_modules",
+        ]
+    },
+
+    NetworkingConfig: {
+        EndpointsConfig: {
+            "drawing-app-network": {
+                Aliases: [
+                    `game-server-${roomNo}`
+                ]
+            }
+        }
     },
 
     Env: [
@@ -69,20 +92,29 @@ async function createGameContainer(noRounds, userName) {
     ]
     });
 
-    await container.start();
+    try {
+        await container.start();
+    } catch (e) {
+        console.log(e);
+    }
+
     console.log("Container started");
+    
+    const info = await container.inspect();
 
     return {userKey, roomNo, noRounds};
 }
 
-async function registerContainerRedis(roomNo, noRounds) {
+async function registerContainerRedis(roomNo, noRounds, userKey) {
+    
     // This function only indicates that the room is created.
     const sec = noRounds*(200);
     console.log(sec);
-    await redis.set(`room-${roomNo}`, "", { EX: sec });
+    await redis.set(String(roomNo), "WAITING", { EX: sec });
+    await redis.set(userKey, roomNo, { EX: sec }); 
 }
 async function addConnectionToGateway(roomNo) {
-    await fetch("http:gateway:8080/connectGameServer", {
+    await fetch("http://gateway:8080/connectGameServer", {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
@@ -90,6 +122,12 @@ async function addConnectionToGateway(roomNo) {
         body: JSON.stringify({
             roomNo: roomNo,
         })
+    })
+    .then(() => {
+        console.log("The connection was sucessful");
+    })
+    .catch(() => {
+        console.log("The connection failed");
     });
 
 }

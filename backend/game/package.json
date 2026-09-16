@@ -12,6 +12,8 @@
   "description": "",
   "dependencies": {
     "cookie": "^2.0.1",
+    "express": "^5.2.1",
+    "redis": "^6.2.1",
     "ws": "^8.21.3"
   },
   "devDependencies": {
