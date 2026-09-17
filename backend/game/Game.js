@@ -54,14 +54,23 @@ export class Game {
     
     const intervalID = setInterval(() => {
 
-      client.send(this.writeData(null));
+      const req = this.writeData(null);
+
+      const d = {
+        req: req,
+        "adminKey": this.adminKey,
+        all: Object.keys(this.players),
+        this: ""
+      }
+
+      client.send(JSON.stringify(d));
       this.time -= 1;
       
       if (this.time <= 0) {
         this.nextRound();
         clearInterval(intervalID);
       }
-    });
+    }, 1000);
 
   }
 
@@ -97,13 +106,15 @@ export class Game {
 
         let leader = this.calcLeaderboard();
 
-        return JSON.stringify({
+        return {
           draw: this.draw,
           state: this.state,
           time: this.time,
           leader: leader,
           chat: this.chat,
-        });
+
+          
+        };
         break;
 
       case "WINNER": // It returns the name of the player that won.
@@ -146,7 +157,7 @@ export class Game {
   }
 
   nextRound() {
-    if ((this.roun+1) >= words.length) {
+    if ((this.roun+1) >= this.words.length) {
       state = "END";
     } else {
       this.round += 1;
@@ -159,7 +170,6 @@ export class Game {
     // const userKey = crypto.randomUUID();
     this.players[userKey] = new Player(userName);
 
-    return userKey;
 
   }
 }

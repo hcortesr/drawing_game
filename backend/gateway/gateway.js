@@ -5,7 +5,6 @@ import { createClient } from "redis";
 const app = express();
 app.use(express.json());
 
-
 const PORT = 8080;
 
 // This is the dictionary that maps the userKey with the connection.
@@ -101,10 +100,23 @@ app.post("/connectGameServer", async (req, res)=> {
 
   ws.onmessage = (event) => {
     const message = JSON.parse(event.data);
-    console.log("req rev", message);
-    console.log(connectionMapUsers); 
+    console.log("req rev");
     
-    if (connectionMapUsers[message.userKey]) {
+
+    if (message.all) {
+      message.all.forEach(element => {
+        if (element != message.this) {
+          if (element == message.adminKey) {
+            message.req.isCreator = true;
+          } else {
+            message.req.isCreator = false;            
+          }
+          connectionMapUsers[element].send(JSON.stringify(message.req));
+        }
+      });
+    }
+    
+    else if (connectionMapUsers[message.userKey]) {
       console.log("something to send");
       connectionMapUsers[message.userKey].send(JSON.stringify(message));
     }
@@ -135,6 +147,7 @@ wss.on("connection", (socket) => {
       case "connect": // The userKey already exists.
         console.log("CConnecred");
         console.log();
+        console.log(message);
         connectionMapUsers[message.userKey] = socket;
         redirectToGameserver(message);
         break;
@@ -147,12 +160,12 @@ wss.on("connection", (socket) => {
 
           await redis.set(userKey, message.roomNo, { EX: 10_000 });
           message["userKey"] = userKey;
-          connectionMapServer[message.roomNo].send(message);
+          connectionMapServer[message.roomNo].send(JSON.stringify(message));
           console.log("Added ws");
           console.log(connectionMapUsers);
           connectionMapUsers[userKey] = socket;
 
-          // The gateway sends the user the key.
+          // The gateway sends the user the key to the client.
           socket.send(JSON.stringify({
             messageType: "assignUserKey",
             "userKey": userKey,
@@ -162,6 +175,10 @@ wss.on("connection", (socket) => {
                      
           
         }
+
+      case "startGame":
+        redirectToGameserver(message);
+
         
     }
 

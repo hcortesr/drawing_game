@@ -25,6 +25,9 @@ setInterval(() => {
 const redis = createClient({
     url: "redis://cache:6379"
 });
+await redis.connect().then(() => {
+    console.log("Sucessfully connected");
+});
 
 const noRounds = process.env.NO_ROUNDS;
 const adminKey = process.env.ADMIN_KEY;
@@ -115,6 +118,7 @@ wss.on("connection", (ws, request) => {
 
     // doActionAlreadyConnected();
     // doActionWhileConnecting(request, ws);
+    console.log(data.toString());
 
     const message = JSON.parse(data.toString());
 
@@ -132,20 +136,48 @@ wss.on("connection", (ws, request) => {
 
 
       case "joinNewUser":
+        // This funciton has to update the screen of all users.s
         console.log("onJoinNew");
-        const userKey = game.addNewUser(message.userName, message.userKey);
-      
-        const req1 = JSON.stringify({
-          userKey: userKey,
-        });
-        ws.send(req1);
+        game.addNewUser(message.userName, message.userKey); // The new user is added
+        const req3 = game.writeData(message.userKey);
+        const all = Object.keys(game.players);
+
+        const req4 = {
+          req: req3,
+          [adminKey]: game.adminKey,
+          all: all,
+          this: message.userKey,
+        }
+
+        ws.send(JSON.stringify(req4));
+        
         break;
 
       case "startGame":
         if (message.userKey == game.adminKey) {
+
+
+
           game.startGame(ws);
-          await redis.set(roomNo, "PLAYING", { KEEPTTL: true });
+          console.log("roomCode", game.roomCode)
+          await redis.set(String(game.roomCode), "PLAYING", { KEEPTTL: true });
+          const all2 = Object.keys(game.players);
+  
+          const req6 = game.writeData(message.userKey);
+          const req5 = {
+            req: req6,
+            all: all2,
+            this: message.userKey,
+          }
+  
+          ws.send(JSON.stringify(req5));
         }
+
+
+
+        console.log("out_startGame");
+
+        break;
 
       case "updateDrawing":
         game.updateDrawing(message.drawing);
@@ -157,13 +189,14 @@ wss.on("connection", (ws, request) => {
 
       case "assignUserKey":
         game.addNewUser(message.userName, message.userKey);
+        break;
 
 
 
     }
 
     // It prints the messages received.
-    console.log("Send:", message);
+    console.log("END of case");
     
     
   });

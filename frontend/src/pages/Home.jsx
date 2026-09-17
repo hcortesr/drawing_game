@@ -44,7 +44,7 @@ export default function Home() {
     console.log("Request after server creation: ", data);
 
     // Now the webpage has to be reloaded because the app automatically handles the connection.
-    navigate("/lobby");
+    window.location.reload();
 
 
     // const ws = new WebSocket("ws://localhost:8080");
@@ -88,6 +88,8 @@ export default function Home() {
       window.location.reload();
 
     }
+
+    console.log(joinCode);
     
     wsRef.current.onopen = () => {
       console.log("onopen");

@@ -80,6 +80,8 @@ export const GameProvider = ({ children }) => {
       console.log("GameContext: Message received");
       console.log(event.data);
       console.log(message);
+      console.log(message.state);
+      
 
       switch(message.state) {
 
@@ -98,13 +100,17 @@ export const GameProvider = ({ children }) => {
             mockPlayers.push({ id: 1, name: player || 'You', isCreator: isC, score: 0, avatar: '🎨' });
           })
           setPlayers(mockPlayers)
+          
 
           
           navigate('/lobby');
           break;
 
         case 'PLAYING':
-
+          console.log("It should change to the Game");
+          
+          setIsCreator(message.isCreator);
+          navigate('/game');
         /*
           Information that the server sends each second.
 
@@ -126,14 +132,15 @@ export const GameProvider = ({ children }) => {
           
 
 
-          navigate('/game');
           break;
 
 
           
         }
   
+        console.log("After switch");
       };
+
       
     }
   }, []);

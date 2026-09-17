@@ -10,7 +10,7 @@ export default function Game() {
   const {
     roomCode, playerName, players, setPlayers,
     currentDrawer, setCurrentDrawer, wordToDraw, setWordToDraw,
-    round, timeLeft, setTimeLeft, setScores, isDrawer, setIsDrawer
+    round, timeLeft, setTimeLeft, setScores, isDrawer, setIsDrawer,
   } = useGame()
 
   
